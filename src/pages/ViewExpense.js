@@ -51,14 +51,57 @@ const NotFound = styled.div`
   flex-direction: column;
 `;
 
+const SearchBoxWrapper = styled.div`
+  width: 30%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+`;
+
+const SearchBox = styled.div`
+  width: 100%;
+  position: relative;
+  display: flex;
+  margin-top: -55px;
+`;
+
+const SearchInput = styled.input`
+  width: 50%;
+  border: 3px solid #00B4CC;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  padding: 5px;
+  outline: none;
+  margin-top: -1px;
+  color: #9DBFAF;
+  :focus{
+    color: #00B4CC;
+  }
+`;
+
+const SearchButton = styled.button`
+  width: 40px;
+  height: 36px;
+  border: 3px solid #00B4CC;
+  background: none;
+  text-align: center;
+  color: #00B4CC;
+  border-radius: 0 5px 5px 0;
+  cursor: pointer;
+  font-size: 20px;
+`;
+
 const user = JSON.parse(localStorage.getItem('user'));
 
 function ViewExpense() {
   const [data, setData] = useState([]);
   const [selectedData, setSelectedData] = useState({});
+  const [searchResult, setsearchResult] = useState("");
   const dispatch = useDispatch();
 
-  const getData = async () => {
+  const getData = async (searchData="") => {
     try {
       const qry = await query(collection(fireDb, `users/${user.id}/transactions`));
       const resp = await getDocs(qry);
@@ -66,9 +109,12 @@ function ViewExpense() {
         id: doc.id,
         ...doc.data()
       }));
-      const sortedData = expenseData.sort((a,b)=>{
+      let sortedData = expenseData.sort((a,b)=>{
         return new Date(b.date) - new Date(a.date);
       });
+      if (searchResult !== '') {
+        sortedData = sortedData.filter(data => data.name.toUpperCase() === searchData.toUpperCase());
+      }
       setData(sortedData);
     } catch (e) {
       alert("error fetching expenses", e);
@@ -123,12 +169,18 @@ function ViewExpense() {
     setSelectedData(data);
   }
 
+  const onSearch = (event) => {
+    event.preventDefault();
+    getData(searchResult);
+  }
+
   if (!data || !data.length) {
     return (
       <NotFound>
         <Header />
         <Center>No Records Found</Center>
         <AddExpenseButton onClick={openAddModal}>Add Expense</AddExpenseButton>
+        <AddExpenseButton onClick={getData}>Refetch Data</AddExpenseButton>
       </NotFound>
     )
   }
@@ -139,6 +191,14 @@ function ViewExpense() {
         <div>
            <Center>
              <Title>My Expenses</Title>
+             <SearchBoxWrapper>
+              <SearchBox>
+                  <SearchInput type="text" placeholder="Expense Name" onChange={(e) => setsearchResult(e.target.value)}/>
+                  <SearchButton type="submit" onClick={onSearch}>
+                    <i className="fa fa-search"></i>
+                </SearchButton>
+              </SearchBox>
+            </SearchBoxWrapper>
              <AddExpenseButton onClick={openAddModal}>Add Expense</AddExpenseButton>
             </Center>
             <Table data={data} editSelectedExpense={editSelectedExpense} />

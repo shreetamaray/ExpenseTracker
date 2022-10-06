@@ -11,12 +11,8 @@ const Login = () => {
   const dispatch = useDispatch();
   const shouldShowError = useSelector((state) => state.error.value.showError);
   const message = useSelector((state) => state.error.value.errorMessage);
-  const loggedIn = JSON.parse(localStorage.getItem('user'));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  if (loggedIn) {
-    navigate('/');
-  }
   const handleLogin = async () => {
     try {
       dispatch(showError(false));
