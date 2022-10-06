@@ -49,6 +49,11 @@ const AddExpenseButton = styled.button`
 const NotFound = styled.div`
   display:flex;
   flex-direction: column;
+  width: 20%;
+  margin: 5em auto;
+  @media screen and (max-width:800px) {
+    width: auto;
+  }
 `;
 
 const SearchBoxWrapper = styled.div`
@@ -176,12 +181,14 @@ function ViewExpense() {
 
   if (!data || !data.length) {
     return (
-      <NotFound>
+      <>
         <Header />
-        <Center>No Records Found</Center>
+        <NotFound>
+        <Title>No Records Found</Title>
         <AddExpenseButton onClick={openAddModal}>Add Expense</AddExpenseButton>
-        <AddExpenseButton onClick={getData}>Refetch Data</AddExpenseButton>
+        {/* <AddExpenseButton onClick={getData}>Refetch Data</AddExpenseButton> */}
       </NotFound>
+      </>
     )
   }
 
