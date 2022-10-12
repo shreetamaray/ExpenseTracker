@@ -14,8 +14,14 @@ const buttonStyle = {
     transition: 'all 0.25s ease'
 }
 
-export const AddExpenseForm = ({ onSubmit, selectedData = {}}) => {
+export const AddExpenseForm = ({ onSubmit }) => {
   const formType = useSelector((state) => state.formType.value);
+  const data = useSelector((state) => state.expensesSlice.expenses);
+  const selectedId = useSelector((state) => state.expensesSlice.selectedId);
+  let selectedData = {};
+  if (formType === 'Edit') {
+    selectedData = data.find(expense => expense.id === selectedId);
+  }
   const [name, setName] = useState(formType === 'Add' ? "" : selectedData?.name);
   const [amount, setAmount] = useState(formType === 'Add' ? "" : selectedData?.amount);
   const [date, setDate] = useState(formType === 'Add' ? "" : selectedData?.date);
@@ -31,7 +37,7 @@ export const AddExpenseForm = ({ onSubmit, selectedData = {}}) => {
         <input
           className="form-control"
           id="name"
-          placeholder="Search or type the skills"
+          placeholder="Expense Type"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
@@ -42,7 +48,7 @@ export const AddExpenseForm = ({ onSubmit, selectedData = {}}) => {
           className="form-control"
           id="date"
           type="date"
-          placeholder="Search or type the skills"
+          placeholder="Expense Date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
         />
@@ -53,7 +59,7 @@ export const AddExpenseForm = ({ onSubmit, selectedData = {}}) => {
           className="form-control"
           id="amount"
           type="decimal"
-          placeholder="Search or type the skills"
+          placeholder="Total Expense Amount"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
         />

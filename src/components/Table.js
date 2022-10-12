@@ -158,6 +158,6 @@ const TableMarkup = ({ editSelectedExpense, data }) => (
   </StyledTable>
 );
 
-export default ({ data,editSelectedExpense }) => (
+export default ({ data, editSelectedExpense }) => (
   <TableMarkup editSelectedExpense={editSelectedExpense} data={data} />
 );

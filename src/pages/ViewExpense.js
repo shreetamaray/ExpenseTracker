@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import Table from '../components/Table';
 import { useSelector, useDispatch } from "react-redux";
+import DatePicker from 'react-datepicker';
 import Modal from '../components/Modal';
 import AddExpenseForm from '../components/AddExpenseForm';
 import { displayModal } from '../redux/slices/modalSlice';
@@ -9,10 +10,12 @@ import { addDoc, collection, doc, getDocs, query, setDoc } from 'firebase/firest
 import { fireDb } from '../configs/firebaseConfig';
 import { setType } from "../redux/slices/formTypeSlice";
 import Header from "../components/Header";
+import { setExpenses, setSelectedExpense } from "../redux/slices/expensesSlice";
+import "react-datepicker/dist/react-datepicker.css";
 
 const Center = styled.div`
   display: flex;
-  margin: 2rem auto;
+  margin: 1.5rem auto;
   width: 70%;
   justify-content: space-between;
   @media screen and (max-width:800px) {
@@ -33,7 +36,7 @@ const AddExpenseButton = styled.button`
   margin: 20px 10px;
   cursor: pointer;
   font-weight: 500;
-  padding: 13px 30px;
+  padding: 13px 40px;
   border-radius: 15px;
   font-size: 0.8rem;
   border: none;
@@ -56,57 +59,60 @@ const NotFound = styled.div`
   }
 `;
 
-const SearchBoxWrapper = styled.div`
-  width: 30%;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-`;
-
-const SearchBox = styled.div`
-  width: 100%;
-  position: relative;
-  display: flex;
-  margin-top: -55px;
-`;
-
-const SearchInput = styled.input`
-  width: 50%;
-  border: 3px solid #00B4CC;
-  border-left: none;
-  border-right: none;
-  border-top: none;
-  padding: 5px;
-  outline: none;
-  margin-top: -1px;
-  color: #9DBFAF;
-  :focus{
-    color: #00B4CC;
-  }
-`;
-
-const SearchButton = styled.button`
-  width: 40px;
-  height: 36px;
-  border: 3px solid #00B4CC;
+const LinkButton = styled.button`
   background: none;
-  text-align: center;
-  color: #00B4CC;
-  border-radius: 0 5px 5px 0;
+  border: none;
+  padding: 0;
+  color: #1d96b2;
+  font-size: 0.8rem;
+  text-decoration: underline;
   cursor: pointer;
-  font-size: 20px;
+`;
+
+const Calendar = styled.div`
+  border-radius: 10px;
+  box-shadow: 0 6px 12px rgba(27, 37, 86, 0.16);
+  overflow: hidden;
+  .react-datepicker__navigation--previous,
+  .react-datepicker__navigation--next {
+    top: 8px;
+  }
+  .react-datepicker__year-wrapper {
+    display: block;
+  }
+  .react-datepicker__input-container{
+    @media screen and (max-width:800px) {
+      text-align: center;
+    }
+  }
 `;
 
 const user = JSON.parse(localStorage.getItem('user'));
 
 function ViewExpense() {
-  const [data, setData] = useState([]);
-  const [selectedData, setSelectedData] = useState({});
-  const [searchResult, setsearchResult] = useState("");
+  const [startDate, setStartDate] = useState('');
   const dispatch = useDispatch();
+  const data = useSelector((state) => state.expensesSlice.expenses);
 
-  const getData = async (searchData="") => {
+  const DatePickerWrapper = styled(({ className, ...props }) => (
+    <DatePicker 
+      {...props}
+      wrapperClassName={className} 
+      selected={startDate}
+      onChange={(date) => setStartDate(date)}
+      showYearPicker
+      dateFormat="yyyy"
+      yearItemNumber={8}
+      isClearable
+      placeholderText="Filter by year"
+    />
+  ))`
+    width: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  `;
+  const getData = async () => {
     try {
       const qry = await query(collection(fireDb, `users/${user.id}/transactions`));
       const resp = await getDocs(qry);
@@ -117,10 +123,11 @@ function ViewExpense() {
       let sortedData = expenseData.sort((a,b)=>{
         return new Date(b.date) - new Date(a.date);
       });
-      if (searchResult !== '') {
-        sortedData = sortedData.filter(data => data.name.toUpperCase() === searchData.toUpperCase());
+      if (startDate) {
+        const year = startDate.getFullYear();
+        sortedData = sortedData.filter(data => data.date.includes(year));
       }
-      setData(sortedData);
+      dispatch(setExpenses(sortedData));
     } catch (e) {
       alert("error fetching expenses", e);
     }
@@ -129,11 +136,12 @@ function ViewExpense() {
   const openAddModal = () => {
     dispatch(displayModal(true));
     dispatch(setType('Add'));
+    dispatch(setSelectedExpense(''));
   }
 
   useEffect(() => {
     getData();
-  }, []);
+  }, [startDate]);
 
   const formType = useSelector((state) => state.formType.value);
 
@@ -171,12 +179,7 @@ function ViewExpense() {
   const editSelectedExpense = (data) => {
     dispatch(displayModal(true));
     dispatch(setType('Edit'));
-    setSelectedData(data);
-  }
-
-  const onSearch = (event) => {
-    event.preventDefault();
-    getData(searchResult);
+    dispatch(setSelectedExpense(data.id));
   }
 
   if (!data || !data.length) {
@@ -186,7 +189,7 @@ function ViewExpense() {
         <NotFound>
         <Title>No Records Found</Title>
         <AddExpenseButton onClick={openAddModal}>Add Expense</AddExpenseButton>
-        {/* <AddExpenseButton onClick={getData}>Refetch Data</AddExpenseButton> */}
+        {startDate && <LinkButton onClick={() => setStartDate('')}>Clear Filter</LinkButton>}
       </NotFound>
       </>
     )
@@ -196,23 +199,20 @@ function ViewExpense() {
     <div>
         <Header />
         <div>
-           <Center>
+          <Center>
              <Title>My Expenses</Title>
-             <SearchBoxWrapper>
-              <SearchBox>
-                  <SearchInput type="text" placeholder="Expense Name" onChange={(e) => setsearchResult(e.target.value)}/>
-                  <SearchButton type="submit" onClick={onSearch}>
-                    <i className="fa fa-search"></i>
-                </SearchButton>
-              </SearchBox>
-            </SearchBoxWrapper>
-             <AddExpenseButton onClick={openAddModal}>Add Expense</AddExpenseButton>
-            </Center>
-            <Table data={data} editSelectedExpense={editSelectedExpense} />
+              <AddExpenseButton onClick={openAddModal}>Add Expense</AddExpenseButton>
+          </Center>
+          <Center>
+            <DatePickerWrapper  
+              calendarContainer={Calendar} 
+            />
+          </Center>
+          <Table data={data} editSelectedExpense={editSelectedExpense} />
         </div>
         {isShown ? (
           <Modal>
-            <AddExpenseForm onSubmit={onSubmit} selectedData={selectedData} />
+            <AddExpenseForm onSubmit={onSubmit} />
           </Modal>
         ) : null}
     </div>
